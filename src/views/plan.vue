@@ -64,7 +64,18 @@
                 <!--{{user.name}}-->
                 <el-tooltip placement="top" effect="light">
                   <div slot="content">
-                    <el-button @click="" icon="el-icon-delete"></el-button>
+                    <el-button-group v-if="user['UserPlan.type']">
+                      <el-button @click="setUser(user.id, 1)"
+                                 :type="userType(1)"
+                                 v-if="user['UserPlan.type']===2"
+                                 icon="el-icon-edit"></el-button>
+                      <el-button @click="setUser(user.id, 2)"
+                                 v-else-if="user['UserPlan.type']===1"
+                                 :type="userType(2)"
+                                 icon="el-icon-edit-outline"></el-button>
+                      <el-button @click="removeUser(user.id)" icon="el-icon-delete"></el-button>
+                    </el-button-group>
+                    <span v-else>creator</span>
                   </div>
                   <el-button :type="userType(user['UserPlan.type'])">
                     {{user.name}}
@@ -139,8 +150,8 @@
 
 <script>
   import AppHeader from '../components/header';
-  import {getPlan, updatePlan, addUser} from "../api/plan";
-  import {getUserNames} from "../api/user";
+  import {getPlan, updatePlan, addUser, setUser, removeUser, getPlanUsers} from "../api/plan";
+  import _ from 'lodash';
 
   export default {
     name      : "plan",
@@ -283,8 +294,65 @@
         this.newUser.id      = this.plan.id;
         this.getUserNames();
       },
+      setUser(userId, type) {
+        // for edit user
+        let planuser = {
+          id    : this.id,
+          userId: userId,
+          type  : type,
+          status: 0,
+        };
+        setUser(planuser)
+          .then(result => {
+            let index                          = this.Users.findIndex((user) => {
+              return user.id === userId;
+            });
+            this.Users[index]['UserPlan.type'] = type;
+            this.$notify({
+              type   : 'info',
+              title  : 'set user',
+              message: result
+            });
+          })
+          .catch(err => {
+            this.$notify({
+              type   : 'error',
+              title  : 'set user',
+              message: err
+            });
+          });
+      },
+      removeUser(userId) {
+        // for edit user
+        let planuser = {
+          id    : this.id,
+          userId: userId
+        };
+        removeUser(planuser)
+          .then(result => {
+            let index = this.Users.findIndex((user) => {
+              return user.id === userId;
+            });
+            this.Users.splice(index, 1);
+            this.$notify({
+              type   : 'info',
+              title  : 'remove user',
+              message: result
+            });
+          })
+          .catch(err => {
+            this.$notify({
+              type   : 'error',
+              title  : 'remove user',
+              message: err
+            });
+          });
+      },
       getUserNames() {
-        getUserNames()
+        getPlanUsers({
+          planId   : this.id,
+          inOut: 0
+        })
           .then(result => {
             this.userNames = result.userNames;
           })
@@ -297,6 +365,7 @@
       },
       submitUserForm(formName) {
         console.log(JSON.stringify(this.newUser));
+        // for add user
         addUser(this.newUser)
           .then(result => {
             this.cancelUserForm();

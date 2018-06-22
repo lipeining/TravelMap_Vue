@@ -71,7 +71,7 @@
             </el-form-item>
             <el-form-item label="cost" prop="cost">
               <!--<el-input v-model.number="plan.cost"-->
-                        <!--type="number" min="0" max="10000"></el-input>-->
+              <!--type="number" min="0" max="10000"></el-input>-->
               <el-input-number v-model="plan.cost"
                                :min="0" :max="10000" label="">
               </el-input-number>
@@ -81,7 +81,7 @@
                                :min="0" :max="5" label="">
               </el-input-number>
               <!--<el-input v-model.number="plan.status"-->
-                        <!--type="number" min="0" max="5"></el-input>-->
+              <!--type="number" min="0" max="5"></el-input>-->
             </el-form-item>
             <el-form-item label="start to end" label-width="100px">
               <el-date-picker
@@ -192,7 +192,7 @@
         })
           .then(result => {
             this.plans = result.plans;
-            this.total = result.plans.length;
+            this.total = result.total;
           })
           .catch(err => {
             this.$notify.error({

@@ -350,8 +350,8 @@
       },
       getUserNames() {
         getPlanUsers({
-          planId   : this.id,
-          inOut: 0
+          planId: this.id,
+          inOut : 0
         })
           .then(result => {
             this.userNames = result.userNames;
@@ -369,6 +369,7 @@
         addUser(this.newUser)
           .then(result => {
             this.cancelUserForm();
+            this.getPlan();
             this.$notify({
               type   : 'info',
               title  : 'new user',

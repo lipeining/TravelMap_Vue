@@ -8,6 +8,7 @@
              active-text-color="#ffd04b">
       <el-menu-item index="/home"> Home</el-menu-item>
       <el-menu-item index="/plans"> Plans</el-menu-item>
+      <el-menu-item index="/groups"> Groups</el-menu-item>
       <!--<el-menu-item index="/backend/categories" v-if="isAdmin"> Categories</el-menu-item>-->
       <!--<el-menu-item index="/backend/logs" v-if="isAdmin"> Logs</el-menu-item>-->
       <el-submenu index="">

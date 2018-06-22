@@ -6,6 +6,8 @@ import reg from '../views/reg'
 import profile from '../views/profile'
 import plans from '../views/plans'
 import plan from '../views/plan'
+import groups from '../views/groups'
+import group from '../views/group'
 import store from "../vuex/user";
 
 Vue.use(Router);
@@ -51,6 +53,18 @@ let routes = [
     path     : '/plan',
     name     : 'plan',
     component: plan,
+    meta     : {requiresAuth: true}
+  },
+  {
+    path     : '/groups',
+    name     : 'groups',
+    component: groups,
+    meta     : {requiresAuth: true}
+  },
+  {
+    path     : '/group',
+    name     : 'group',
+    component: group,
     meta     : {requiresAuth: true}
   },
 

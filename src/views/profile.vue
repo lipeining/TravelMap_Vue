@@ -1,6 +1,5 @@
 <template>
   <el-row>
-    <app-header/>
     <section class="userWrap">
       <header>
         <el-alert v-if="error" :title="error.title" type="warning" :description="error.message" show-icon/>
@@ -35,13 +34,9 @@
 
 <script>
   import {update, getUser} from '../api/user';
-  import AppHeader from '../components/header';
 
   export default {
-    name      : "profile",
-    components: {
-      'app-header': AppHeader
-    },
+    name   : "profile",
     data() {
       // form validate rules
       let user    = {
@@ -73,7 +68,7 @@
     created() {
       this.user = this.$store.getters.getUserInfo;
     },
-    methods   : {
+    methods: {
       submit(formName) {
         // form validate
         this.$refs[formName].validate(valid => {

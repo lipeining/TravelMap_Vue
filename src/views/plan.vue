@@ -1,6 +1,5 @@
 <template>
   <el-row>
-    <app-header/>
     <el-row>
       <h3>plan id : {{id}}</h3>
     </el-row>
@@ -149,15 +148,11 @@
 </template>
 
 <script>
-  import AppHeader from '../components/header';
   import {getPlan, updatePlan, addUser, setUser, removeUser, getPlanUsers} from "../api/plan";
   import _ from 'lodash';
 
   export default {
-    name      : "plan",
-    components: {
-      AppHeader
-    },
+    name   : "plan",
     data() {
       // let plan = {
       //   id: 0, name: '', intro: '', cost: 0, status: 0, startTime: '', endTime: '',
@@ -218,7 +213,7 @@
       this.id = this.$route.query.id;
       this.getPlan();
     },
-    methods   : {
+    methods: {
       getPlan: _.debounce(function () {
         return getPlan({
           id: this.id
@@ -287,7 +282,7 @@
       },
       cancelUserForm() {
         this.userFormVisible = false;
-        this.newUser         = {id: 0, userId: 0, type: 0, status: 0};
+        this.newUser         = {id: 0, userIds: [], type: 0, status: 0};
       },
       addUserForm() {
         this.userFormVisible = true;

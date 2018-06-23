@@ -1,6 +1,5 @@
 <template>
   <el-row>
-    <app-header/>
     <h1>groups</h1>
     <el-row class="search">
       <el-col :span="5">
@@ -18,11 +17,32 @@
 
     <el-row class="table">
       <el-table :data="groups" border size="medium">
-        <el-table-column prop="name" label="name" align="center">
+        <el-table-column prop="name" label="name" align="center" width="100">
         </el-table-column>
-        <el-table-column prop="intro" label="intro" align="center">
+        <el-table-column prop="intro" label="intro" align="center" width="200">
         </el-table-column>
-        <el-table-column label="edit" align="center">
+        <el-table-column label="number" align="center">
+          <template slot-scope="scope">
+            <el-tooltip class="item" effect="dark" content="get user list" placement="top">
+              <el-button type="success" size="mini" icon="el-icon-document"
+                         @click="getGroupUsers(scope.row.id, scope.$index)">
+                {{scope.row.number}}
+              </el-button>
+            </el-tooltip>
+            <!--{{scope.row.userNames}}-->
+            <el-row v-if="scope.row.userNames.length">
+              <el-col :span="3" v-for="user in scope.row.userNames" :key="user.id">
+                <el-tag type="warning">
+                  {{user.name}}
+                </el-tag>
+              </el-col>
+              <!--<el-tag type="success" v-for="user in scope.row.userNames"-->
+                     <!--:key="user.id">{{user.name}}-->
+              <!--</el-tag>-->
+            </el-row>
+          </template>
+        </el-table-column>
+        <el-table-column label="edit" align="center" width="300">
           <template slot-scope="scope">
             <router-link :to="{name:'group',query:{id:scope.row.id}}">
               <el-button type="info" size="mini" icon="el-icon-document">
@@ -77,15 +97,12 @@
 </template>
 
 <script>
-  import {getGroups, delGroup, createGroup, updateGroup} from '../api/group';
+  import {getGroups, delGroup, createGroup, updateGroup, getGroupUsers} from '../api/group';
   import _ from 'lodash';
   import AppHeader from '../components/header';
 
   export default {
     name      : "groups",
-    components: {
-      AppHeader
-    },
     data() {
       let groups    = [];
       let pageSize  = 10;
@@ -130,8 +147,11 @@
           search   : this.search
         })
           .then(result => {
-            this.groups = result.groups;
             this.total  = result.total;
+            this.groups = result.groups.map((group) => {
+              group.userNames = [];
+              return group;
+            });
           })
           .catch(err => {
             this.$notify.error({
@@ -140,6 +160,21 @@
             });
           });
       }, 500),
+      getGroupUsers(groupId, index) {
+        return getGroupUsers({
+          groupId: groupId,
+          inOut  : 1
+        })
+          .then(result => {
+            this.groups[index]['userNames'] = result.userNames;
+          })
+          .catch(err => {
+            this.$notify.error({
+              title  : 'error',
+              message: err
+            });
+          });
+      },
       handleCurrentChange(val) {
         this.pageIndex = val;
         this.getGroups();

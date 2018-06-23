@@ -1,6 +1,5 @@
 <template>
   <el-row>
-    <app-header/>
     <h1>plans</h1>
     <el-row class="search">
       <el-col :span="5">
@@ -109,13 +108,9 @@
 <script>
   import {getPlans, delPlan, createPlan, updatePlan} from '../api/plan';
   import _ from 'lodash';
-  import AppHeader from '../components/header';
 
   export default {
     name      : "plans",
-    components: {
-      AppHeader
-    },
     data() {
       let plans     = [];
       let pageSize  = 10;

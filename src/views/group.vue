@@ -10,9 +10,9 @@
       <!--for group user-->
       <el-row v-if="Users.length">
         <!--<el-col :span="3" v-for="user in Users" :key="user.id">-->
-          <!--<el-tag :type="getUserType(user['UserGroup.type'])">-->
-            <!--{{user.name}}-->
-          <!--</el-tag>-->
+        <!--<el-tag :type="getUserType(user['UserGroup.type'])">-->
+        <!--{{user.name}}-->
+        <!--</el-tag>-->
         <!--</el-col>-->
 
         <el-col v-for="user in Users" :span="3" class="user" :key="user.id">
@@ -48,6 +48,49 @@
       </el-row>
       <el-row v-else>
         no user in this group
+      </el-row>
+    </el-row>
+
+    <el-row class="Plans">
+      <!--for group plans -->
+      <el-row v-if="Plans.length">
+        <el-row class="table">
+          <el-table :data="Plans" border size="medium">
+            <el-table-column prop="name" label="name" align="center">
+            </el-table-column>
+            <el-table-column prop="intro" label="intro" align="center">
+            </el-table-column>
+            <el-table-column prop="cost" label="cost" align="center">
+            </el-table-column>
+            <el-table-column prop="startTime" label="startTime" align="center">
+            </el-table-column>
+            <el-table-column prop="endTime" label="endTime" align="center">
+            </el-table-column>
+            <el-table-column label="edit" align="center">
+              <template slot-scope="scope">
+                <router-link :to="{name:'plan',query:{id:scope.row.id}}">
+                  <el-button type="info" size="mini" icon="el-icon-document">
+                  </el-button>
+                </router-link>
+                <el-button
+                  size="mini" type="danger" icon="el-icon-delete"
+                  @click="">
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-row>
+
+        <el-col :span="3">
+          <el-tooltip class="item" effect="dark" content="add a plan" placement="right">
+            <el-button type="success" @click="" icon="el-icon-plus" circle>
+            </el-button>
+          </el-tooltip>
+        </el-col>
+
+      </el-row>
+      <el-row v-else>
+        no plan in this group
       </el-row>
     </el-row>
 
@@ -100,6 +143,7 @@
         group          : group,
         userNames      : userNames,
         Users          : [],
+        Plans          : [],
         newUser        : newUser,
         userFormVisible: false,
       }
@@ -128,6 +172,7 @@
           .then(result => {
             this.group = result.group;
             this.Users = result.Users;
+            this.Plans = result.Plans;
           })
           .catch(err => {
             this.$notify.error({
@@ -247,5 +292,9 @@
   .group-name-intro {
     margin: 1em;
     border: 1px;
+  }
+
+  .Plans {
+    margin-top: 1em;
   }
 </style>

@@ -98,6 +98,42 @@
             <el-row>
               group list
             </el-row>
+            <el-row :gutter="6">
+              <el-col v-for="group in Groups" :span="6" :key="group.id">
+                <!--{{user.name}}-->
+                <el-tooltip placement="top" effect="light">
+                  <div slot="content">
+                    <el-button-group v-if="group['GroupPlan.type']">
+                      <el-button @click="setGroup(group.id, 1)"
+                                 :type="getGroupType(1)"
+                                 v-if="group['GroupPlan.type']===2"
+                                 icon="el-icon-edit"></el-button>
+                      <el-button @click="setGroup(group.id, 2)"
+                                 v-else-if="group['GroupPlan.type']===1"
+                                 :type="getGroupType(2)"
+                                 icon="el-icon-edit-outline"></el-button>
+                      <el-button @click="setGroup(group.id)" icon="el-icon-delete"></el-button>
+                    </el-button-group>
+                    <span v-else>creator</span>
+                  </div>
+                  <el-button :type="getGroupType(group['GroupPlan.type'])"
+                             size="mini" icon="el-icon-document"
+                             @click="getGroupUsers(group.id)">
+                    {{group.name}}|({{group.number}})
+                  </el-button>
+                </el-tooltip>
+              </el-col>
+              <!--<el-button-group v-for="user in Users" :key="user.id">-->
+              <!--<el-button :type="userType(user['UserPlan.type'])">{{user.name}}</el-button>-->
+              <!--<el-button type="primary" @click="" icon="el-icon-delete"></el-button>-->
+              <!--</el-button-group>-->
+            </el-row>
+            <el-row class="">
+              <el-tooltip class="item" effect="dark" content="add a group" placement="right">
+                <el-button type="success" @click="addGroupForm()" icon="el-icon-plus" circle>
+                </el-button>
+              </el-tooltip>
+            </el-row>
           </el-row>
         </el-col>
       </el-row>
@@ -144,11 +180,57 @@
         </div>
       </el-dialog>
     </div>
+
+    <!-- form for new group-->
+    <div>
+      <el-dialog title="new group" :visible.sync="groupFormVisible" :before-close="handleDialogClose">
+        <div>
+          <el-form :model="group" label-width="70px" auto-complete="on"
+                   :rules="rules" ref="groupForm">
+            <el-form-item label="name" prop="name">
+              <el-input v-model="group.name" type="text"></el-input>
+            </el-form-item>
+            <el-form-item label="intro" prop="intro">
+              <el-input v-model="group.intro" type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 4}"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-checkbox-group v-model="group.userIds">
+                <el-checkbox v-for="userI in userNames" :min="1" :max="2"
+                             :label="userI.id" :key="userI.id">
+                  {{userI.name}}
+                </el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
+            <el-form-item label="type" prop="type">
+              <el-input-number v-model="group.type"
+                               :min="0" :max="5" label="">
+              </el-input-number>
+            </el-form-item>
+            <el-form-item label="status" prop="status">
+              <el-input-number v-model="group.status"
+                               :min="0" :max="5" label="">
+              </el-input-number>
+            </el-form-item>
+          </el-form>
+        </div>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="cancelGroupForm()">cancel</el-button>
+          <el-button type="primary" @click="submitGroupForm('groupForm')">submit</el-button>
+        </div>
+      </el-dialog>
+    </div>
+
   </el-row>
 </template>
 
 <script>
-  import {getPlan, updatePlan, addUser, setUser, removeUser, getPlanUsers} from "../api/plan";
+  import {
+    getPlan, updatePlan,
+    addUser, setUser, removeUser, getPlanUsers,
+    addGroup, setGroup, removeGroup, getPlanGroups,
+  } from "../api/plan";
+  import {getUserNames} from "../api/user";
   import _ from 'lodash';
 
   export default {
@@ -197,16 +279,13 @@
       };
       let newUser   = {id: 0, userIds: [], type: 0, status: 0};
       let userNames = [];
+      let group     = {userIds: [], planId: 0, type: 0, status: 0, name: '', intro: ''};
       return {
-        id       : 0,
-        plan     : plan,
-        rules    : rules,
-        picker   : picker,
+        id       : 0, plan: plan, rules: rules, picker: picker,
         newUser  : newUser, userNames: userNames,
         start2end: '',
-        Spots    : [],
-        Users    : [],
-        editPlan : false, userFormVisible: false,
+        Spots    : [], Users: [], Groups: [], group: group,
+        editPlan : false, userFormVisible: false, groupFormVisible: false,
       }
     },
     created() {
@@ -222,6 +301,7 @@
             this.plan      = result.plan;
             this.Users     = result.Users;
             this.Spots     = result.Spots;
+            this.Groups    = result.Groups;
             this.start2end = [
               this.plan.startTime,
               this.plan.endTime
@@ -235,6 +315,18 @@
           });
       }, 500),
       userType(type) {
+        switch (type) {
+          case 0:
+            return 'info';
+          case 1:
+            return 'success';
+          case 2:
+            return 'warning';
+          default:
+            return 'info';
+        }
+      },
+      getGroupType(type) {
         switch (type) {
           case 0:
             return 'info';
@@ -287,7 +379,7 @@
       addUserForm() {
         this.userFormVisible = true;
         this.newUser.id      = this.plan.id;
-        this.getUserNames();
+        this.getPlanUsers();
       },
       setUser(userId, type) {
         // for edit user
@@ -343,7 +435,7 @@
             });
           });
       },
-      getUserNames() {
+      getPlanUsers() {
         getPlanUsers({
           planId: this.id,
           inOut : 0
@@ -375,6 +467,127 @@
             this.$notify({
               type   : 'error',
               title  : 'new user',
+              message: err
+            });
+          });
+      },
+      submitGroupForm(formName) {
+        this.$refs[formName].validate(valid => {
+          if (!valid) {
+            return false;
+          } else {
+            // for add group to this plan
+            console.log(this.group);
+            addGroup(this.group)
+              .then(result => {
+                this.cancelGroupForm();
+                this.getPlan();
+              })
+              .catch(err => {
+                this.$notify({
+                  type   : 'error',
+                  title  : 'new group',
+                  message: err
+                });
+              });
+          }
+        });
+      },
+      cancelGroupForm() {
+        this.groupFormVisible = false;
+        this.group            = {
+          planId: 0, userIds: [], type: 0, status: 0,
+          name  : '', intro: ''
+        };
+      },
+      addGroupForm() {
+        this.groupFormVisible = true;
+        this.group.planId     = this.plan.id;
+        this.getUsersForGroup();
+      },
+      setGroup(groupId, type) {
+        // for edit plan group
+        let plangroup = {
+          planId : this.plan.id,
+          groupId: groupId,
+          type   : type,
+          status : 0,
+        };
+        setGroup(plangroup)
+          .then(result => {
+            let index                            = this.Groups.findIndex((group) => {
+              return group.id === groupId;
+            });
+            this.Groups[index]['GroupPlan.type'] = type;
+            this.$notify({
+              type   : 'info',
+              title  : 'set group',
+              message: result
+            });
+          })
+          .catch(err => {
+            this.$notify({
+              type   : 'error',
+              title  : 'set group',
+              message: err
+            });
+          });
+      },
+      removeGroup(groupId) {
+        // for edit user
+        let plangroup = {
+          planId : this.plan.id,
+          groupId: groupId
+        };
+        removeGroup(plangroup)
+          .then(result => {
+            let index = this.Groups.findIndex((group) => {
+              return group.id === groupId;
+            });
+            this.Groups.splice(index, 1);
+            this.$notify({
+              type   : 'info',
+              title  : 'remove group',
+              message: result
+            });
+          })
+          .catch(err => {
+            this.$notify({
+              type   : 'error',
+              title  : 'remove group',
+              message: err
+            });
+          });
+      },
+      getGroupNames() {
+        // only get the group from the creator!
+        // getGroupNames({
+        //
+        // })
+        //   .then(result => {
+        //   })
+        //   .catch(err => {
+        //     this.$notify.error({
+        //       title  : 'get group name',
+        //       message: err
+        //     });
+        //   });
+      },
+      getUsersForGroup() {
+        // get name from user table!
+        getUserNames({})
+          .then(result => {
+            this.userNames = result.userNames;
+            this.$notify({
+              type   : 'info',
+              title  : 'get  users',
+              message: result
+            });
+          })
+          .catch(err => {
+            this.$notify({
+              type   : 'error',
+              title  : 'get  users',
               message: err
             });
           });

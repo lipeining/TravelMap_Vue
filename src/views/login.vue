@@ -37,7 +37,8 @@
       <!--</drag-verify>-->
       <!--</el-form-item>-->
       <el-form-item>
-        <el-input type="text" v-model="user.code"></el-input>
+        <el-input type="text" v-model="user.code"
+                  v-on:keyup.enter="submit('loginForm')"></el-input>
         <!--<el-button @click="getCaptcha()">img</el-button>-->
         <el-tooltip effect="dark" content="click to change captcha" placement="right-end">
           <img :src="captcha" class="captcha" @click="getCaptcha()">

@@ -9,8 +9,18 @@ import store from './vuex/user'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
+import BaiduMap from 'vue-baidu-map'
+import {BmlMarkerClusterer} from 'vue-baidu-map'
+
+
+
 Vue.config.productionTip = false;
 
+Vue.use(BaiduMap, {
+  // ak 是在百度地图开发者平台申请的密钥 详见 http://lbsyun.baidu.com/apiconsole/key */
+  ak: 'wF6SqGwQcveLVmM3jtL8MIGxpaxb3obR'
+});
+Vue.component('bml-marker-cluster', BmlMarkerClusterer);
 Vue.use(ElementUI);
 Vue.use(VueRouter);
 Vue.use(Vuex);

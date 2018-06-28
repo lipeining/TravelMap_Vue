@@ -116,11 +116,16 @@
                     </el-button-group>
                     <span v-else>creator</span>
                   </div>
-                  <el-button :type="getGroupType(group['GroupPlan.type'])"
-                             size="mini" icon="el-icon-document"
-                             @click="getGroupUsers(group.id)">
-                    {{group.name}}|({{group.number}})
-                  </el-button>
+                  <!--<el-button :type="getGroupType(group['GroupPlan.type'])"-->
+                  <!--size="mini" icon="el-icon-document">-->
+                  <!--{{group.name}}|({{group.number}})-->
+                  <!--</el-button>-->
+                  <router-link :to="{name:'group',query:{id:group.id}}">
+                    <el-button :type="getGroupType(group['GroupPlan.type'])"
+                               size="mini" icon="el-icon-document">
+                      {{group.name}}|({{group.number}})
+                    </el-button>
+                  </router-link>
                 </el-tooltip>
               </el-col>
               <!--<el-button-group v-for="user in Users" :key="user.id">-->
@@ -137,20 +142,49 @@
           </el-row>
         </el-col>
       </el-row>
-      <el-row v-if="Spots.length" :gutter="10">
+      <el-row :gutter="15">
         <!--here for the spots-->
-        <el-col v-for="spot in Spots" :span="4" :key="spot.id">
-          {{spot}}
-        </el-col>
-      </el-row>
-      <el-row :gutter="10" v-else>
-        no spots right now!
+        <!--<el-col v-for="spot in Spots" :span="4" :key="spot.id">-->
+        <!--{{spot}}-->
+        <!--</el-col>-->
+        <el-row>
+          <baidu-map class="map"
+                     :center="{lng: 116.404, lat: 39.915}"
+                     :zoom="14"
+                     :scroll-wheel-zoom="false"
+                     @click="addSpot">
+            <bm-marker v-if="spot.location.lng!==116.404 && spot.location.lat!==39.915"
+                       :position="spot.location"
+                       :dragging="true" animation="BMAP_ANIMATION_BOUNCE"
+                       @dragstart="dragstart" @dragend="dragend" @click="click">
+              <bm-label content="spot" :labelStyle="{color: 'red', fontSize : '24px'}"
+                        :offset="{width: -35, height: 30}"/>
+            </bm-marker>
+
+            <bm-marker v-for="spotI in Spots" :key="spotI.name"
+                       :position="spotI.location"
+                       @click="editSpotShow"
+                       :dragging="true" animation="BMAP_ANIMATION_BOUNCE">
+              <bm-label :labelStyle="{color: 'blue', fontSize : '24px'}"
+                        :offset="{width: -35, height: 30}"/>
+              <bm-info-window :position="spotI.location" :show="spotI.show"
+                              :title="spotI.name">
+                <p v-text="spotI.intro"></p>
+                <el-button type="info" icon="el-icon-document"></el-button>
+                <el-button type="success" icon="el-icon-edit"></el-button>
+                <el-button type="danger" icon="el-icon-delete"></el-button>
+              </bm-info-window>
+            </bm-marker>
+            <bm-navigation anchor="BMAP_ANCHOR_BOTTOM_RIGHT"></bm-navigation>
+          </baidu-map>
+        </el-row>
       </el-row>
     </el-row>
 
     <!--form for new user-->
     <div>
-      <el-dialog title="new user" :visible.sync="userFormVisible" :before-close="handleDialogClose">
+      <el-dialog title="new user" :visible.sync="userFormVisible"
+                 :before-close="handleUserDialogClose">
         <div>
           <el-form :model="newUser" label-width="70px" auto-complete="on"
                    ref="userForm">
@@ -183,7 +217,8 @@
 
     <!-- form for new group-->
     <div>
-      <el-dialog title="new group" :visible.sync="groupFormVisible" :before-close="handleDialogClose">
+      <el-dialog title="new group" :visible.sync="groupFormVisible"
+                 :before-close="handleGroupDialogClose">
         <div>
           <el-form :model="group" label-width="70px" auto-complete="on"
                    :rules="rules" ref="groupForm">
@@ -221,6 +256,58 @@
       </el-dialog>
     </div>
 
+    <!-- form for new spot-->
+    <div>
+      <el-dialog title="new spot" :visible.sync="spotFormVisible"
+                 :before-close="handleSpotDialogClose">
+        <div>
+          <el-form :model="spot" label-width="70px" auto-complete="on"
+                   :rules="rules" ref="spotForm">
+            <el-form-item label="name" prop="name">
+              <el-input v-model="spot.name" type="text"></el-input>
+            </el-form-item>
+            <el-form-item label="intro" prop="intro">
+              <el-input v-model="spot.intro" type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 4}"></el-input>
+            </el-form-item>
+            <el-form-item label="cost" prop="cost">
+              <el-input-number v-model="spot.cost"
+                               :min="0" :max="10000" label="">
+              </el-input-number>
+            </el-form-item>
+            <el-form-item label="type" prop="type">
+              <el-input-number v-model="spot.type"
+                               :min="0" :max="5" label="">
+              </el-input-number>
+            </el-form-item>
+            <el-form-item label="status" prop="status">
+              <el-input-number v-model="spot.status"
+                               :min="0" :max="5" label="">
+              </el-input-number>
+            </el-form-item>
+            <el-form-item label="start to end" label-width="100px">
+              <el-date-picker
+                v-model="spotTimezone"
+                type="daterange"
+                align="right"
+                unlink-panels
+                range-separator="to"
+                start-placeholder="startTime"
+                end-placeholder="endTime"
+                :picker-options="picker">
+              </el-date-picker>
+            </el-form-item>
+          </el-form>
+          <p>location:lng-lat</p>
+          <p>{{spot.location.lng}}-{{spot.location.lat}}</p>
+        </div>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="cancelSpotForm()">cancel</el-button>
+          <el-button type="primary" @click="submitSpotForm('spotForm')">submit</el-button>
+        </div>
+      </el-dialog>
+    </div>
+
   </el-row>
 </template>
 
@@ -229,6 +316,7 @@
     getPlan, updatePlan,
     addUser, setUser, removeUser, getPlanUsers,
     addGroup, setGroup, removeGroup, getPlanGroups,
+    addSpot, setSpot, removeSpot,
   } from "../api/plan";
   import {getUserNames} from "../api/user";
   import _ from 'lodash';
@@ -239,6 +327,11 @@
       // let plan = {
       //   id: 0, name: '', intro: '', cost: 0, status: 0, startTime: '', endTime: '',
       // };
+      let spot      = {
+        id  : 0, location: {lng: 116.404, lat: 39.915},
+        name: '', intro: '', planId: 0,
+        cost: 0, type: 0, status: 0,
+      };
       let plan      = {};
       let picker    = {
         shortcuts: [{
@@ -286,6 +379,7 @@
         start2end: '',
         Spots    : [], Users: [], Groups: [], group: group,
         editPlan : false, userFormVisible: false, groupFormVisible: false,
+        spot     : spot, spotFormVisible: false, spotTimezone: '',
       }
     },
     created() {
@@ -300,7 +394,14 @@
           .then(result => {
             this.plan      = result.plan;
             this.Users     = result.Users;
-            this.Spots     = result.Spots;
+            this.Spots     = result.Spots.map((spot) => {
+              spot.show     = true;
+              spot.location = {
+                lng: spot.location.coordinates[0],
+                lat: spot.location.coordinates[1],
+              };
+              return spot;
+            });
             this.Groups    = result.Groups;
             this.start2end = [
               this.plan.startTime,
@@ -368,8 +469,16 @@
           }
         });
       },
-      handleDialogClose(done) {
+      handleUserDialogClose(done) {
         this.cancelUserForm();
+        done();
+      },
+      handleGroupDialogClose(done) {
+        this.cancelGroupForm();
+        done();
+      },
+      handleSpotDialogClose(done) {
+        this.cancelSpotForm();
         done();
       },
       cancelUserForm() {
@@ -591,12 +700,86 @@
               message: err
             });
           });
-      }
+      },
+      editSpotShow(evt) {
+        console.log(evt);
+      },
+      dragend(evt) {
+        console.log('dragend -begin-');
+        console.log(evt.type);
+        console.log(evt.target);
+        console.log(evt.pixel);
+        console.log(evt.point);
+        console.log('dragend -end-');
+      },
+      addSpot(evt) {
+        this.spot.location   = evt.point;
+        this.spot.planId     = this.plan.id;
+        this.spotFormVisible = true;
+      },
+      cancelSpotForm() {
+        this.spotFormVisible = false;
+        this.spot            = {
+          id  : 0, location: {lng: 116.404, lat: 39.915},
+          name: '', intro: '', planId: 0,
+          cost: 0, type: 0, status: 0,
+        };
+        this.spotTimezone    = '';
+      },
+      submitSpotForm(formName) {
+        this.$refs[formName].validate(valid => {
+          if (!valid) {
+            return false;
+          } else {
+            // create spot
+            if (this.spot.id === 0) {
+              let spot = {
+                location : this.spot.location, name: this.spot.name, intro: this.spot.intro,
+                planId   : this.spot.planId, cost: this.spot.cost,
+                type     : this.spot.type, status: this.spot.status,
+                startTime: this.spotTimezone[0], endTime: this.spotTimezone[1],
+              };
+              console.log(JSON.stringify(spot));
+              addSpot(spot)
+                .then(result => {
+                  this.cancelSpotForm();
+                  this.getPlan();
+                })
+                .catch(err => {
+                  this.$notify.error({
+                    title  : 'create spot error',
+                    message: err
+                  });
+                  console.log(err);
+                });
+            } else {
+              // edit group
+              console.log(JSON.stringify(this.spot));
+              // updateGroup(this.spot)
+              //   .then(result => {
+              //     this.cancelSpotForm();
+              //   })
+              //   .catch(err => {
+              //     this.$notify.error({
+              //       title  : 'update spot error',
+              //       message: err
+              //     });
+              //     console.log(err);
+              //   });
+            }
+          }
+        });
+      },
     }
   }
 </script>
 
 <style scoped>
+  .map {
+    width: 90%;
+    height: 400px;
+  }
+
   .edit-checkbox {
     float: right;
   }

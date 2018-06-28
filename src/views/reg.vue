@@ -33,7 +33,9 @@
         </el-input>
       </el-form-item>
       <el-form-item label="password" prop="passwordR">
-        <el-input type="password" v-model="user.passwordR" placeholder="Please enter password">
+        <el-input type="password" v-model="user.passwordR"
+                  placeholder="Please enter password"
+                  v-on:keyup.enter.native="submit('loginForm')">
         </el-input>
       </el-form-item>
       <el-form-item>

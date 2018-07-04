@@ -152,10 +152,13 @@
                      :center="{lng: 116.404, lat: 39.915}"
                      :zoom="14"
                      :scroll-wheel-zoom="false"
-                     @click="addSpot">
+                     @rightclick="addSpotForm">
+            <bm-city-list anchor="BMAP_ANCHOR_TOP_LEFT"></bm-city-list>
+            <bm-geolocation anchor="BMAP_ANCHOR_BOTTOM_RIGHT"
+                            :showAddressBar="true" :autoLocation="true"></bm-geolocation>
             <bm-marker v-if="spot.location.lng!==116.404 && spot.location.lat!==39.915"
                        :position="spot.location"
-                       :dragging="true" animation="BMAP_ANIMATION_BOUNCE"
+                       :dragging="false" animation="BMAP_ANIMATION_BOUNCE"
                        @dragstart="dragstart" @dragend="dragend" @click="click">
               <bm-label content="spot" :labelStyle="{color: 'red', fontSize : '24px'}"
                         :offset="{width: -35, height: 30}"/>
@@ -163,7 +166,7 @@
 
             <bm-marker v-for="spotI in Spots" :key="spotI.name"
                        :position="spotI.location"
-                       @click="editSpotShow"
+                       @dragstart="dragstart" @dragend="dragend"
                        :dragging="true" animation="BMAP_ANIMATION_BOUNCE">
               <bm-label :labelStyle="{color: 'blue', fontSize : '24px'}"
                         :offset="{width: -35, height: 30}"/>
@@ -171,7 +174,7 @@
                               :title="spotI.name">
                 <p v-text="spotI.intro"></p>
                 <el-button type="info" icon="el-icon-document"></el-button>
-                <el-button type="success" icon="el-icon-edit"></el-button>
+                <el-button type="success" icon="el-icon-edit" @click="editSpotForm(spotI)"></el-button>
                 <el-button type="danger" icon="el-icon-delete"></el-button>
               </bm-info-window>
             </bm-marker>
@@ -701,8 +704,12 @@
             });
           });
       },
-      editSpotShow(evt) {
-        console.log(evt);
+      dragstart(evt) {
+        console.log('dragend -begin-');
+        console.log(evt.type);
+        console.log(evt.target);
+        // can we just set some thing in the target?
+        console.log('dragend -end-');
       },
       dragend(evt) {
         console.log('dragend -begin-');
@@ -712,9 +719,17 @@
         console.log(evt.point);
         console.log('dragend -end-');
       },
-      addSpot(evt) {
+      addSpotForm(evt) {
         this.spot.location   = evt.point;
         this.spot.planId     = this.plan.id;
+        this.spotFormVisible = true;
+      },
+      editSpotForm(spot) {
+        this.spot            = _.omit(spot, ['show']);
+        this.spotTimezone    = [
+          this.spot.startTime,
+          this.spot.endTime
+        ];
         this.spotFormVisible = true;
       },
       cancelSpotForm() {
@@ -754,14 +769,18 @@
                 });
             } else {
               // edit group
-              console.log(JSON.stringify(this.spot));
-              // updateGroup(this.spot)
+              let spot          = _.cloneDeep(this.spot);
+              spot['startTime'] = this.spotTimezone[0];
+              spot['endTime']   = this.spotTimezone[1];
+              console.log(JSON.stringify(spot));
+              // addSpot(spot)
               //   .then(result => {
               //     this.cancelSpotForm();
+              //     this.getPlan();
               //   })
               //   .catch(err => {
               //     this.$notify.error({
-              //       title  : 'update spot error',
+              //       title  : 'create spot error',
               //       message: err
               //     });
               //     console.log(err);

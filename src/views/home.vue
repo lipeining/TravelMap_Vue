@@ -7,6 +7,9 @@
                  :zoom="14"
                  :scroll-wheel-zoom="false"
                  @click="addSpot">
+        <bm-city-list anchor="BMAP_ANCHOR_TOP_LEFT"></bm-city-list>
+        <bm-geolocation anchor="BMAP_ANCHOR_TOP_RIGHT"
+                    :showAddressBar="true" :autoLocation="true"></bm-geolocation>
         <bm-marker v-if="spot.location.lng!==116.404 && spot.location.lat!==39.915"
                    :position="spot.location"
                    :dragging="true" animation="BMAP_ANIMATION_BOUNCE"

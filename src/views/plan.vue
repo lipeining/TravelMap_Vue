@@ -149,27 +149,27 @@
         <!--</el-col>-->
         <el-row>
           <baidu-map class="map"
-                     :center="{lng: 116.404, lat: 39.915}"
-                     :zoom="14"
+                     :center="center" :zoom="14"
+                     @ready="BMapReadyHandler"
                      :scroll-wheel-zoom="false"
                      @rightclick="addSpotForm">
             <bm-city-list anchor="BMAP_ANCHOR_TOP_LEFT"></bm-city-list>
-            <bm-geolocation anchor="BMAP_ANCHOR_BOTTOM_RIGHT"
+            <bm-geolocation anchor="BMAP_ANCHOR_TOP_RIGHT"
+                            @locationSuccess="locationSuccess"
                             :showAddressBar="true" :autoLocation="true"></bm-geolocation>
             <bm-marker v-if="spot.location.lng!==116.404 && spot.location.lat!==39.915"
                        :position="spot.location"
                        :dragging="false" animation="BMAP_ANIMATION_BOUNCE"
-                       @dragstart="dragstart" @dragend="dragend" @click="click">
+                       @dragstart="dragstart" @dragend="dragend">
               <bm-label content="spot" :labelStyle="{color: 'red', fontSize : '24px'}"
                         :offset="{width: -35, height: 30}"/>
             </bm-marker>
 
             <bm-marker v-for="spotI in Spots" :key="spotI.name"
                        :position="spotI.location"
+                       @click="showInfoWindow"
                        @dragstart="dragstart" @dragend="dragend"
                        :dragging="true" animation="BMAP_ANIMATION_BOUNCE">
-              <bm-label :labelStyle="{color: 'blue', fontSize : '24px'}"
-                        :offset="{width: -35, height: 30}"/>
               <bm-info-window :position="spotI.location" :show="spotI.show"
                               :title="spotI.name">
                 <p v-text="spotI.intro"></p>
@@ -373,6 +373,7 @@
           {min: 20, max: 120, message: '长度在 20 到 120 个字符'}
         ]
       };
+      let center = {lng: 116.404, lat: 39.915};
       let newUser   = {id: 0, userIds: [], type: 0, status: 0};
       let userNames = [];
       let group     = {userIds: [], planId: 0, type: 0, status: 0, name: '', intro: ''};
@@ -383,6 +384,7 @@
         Spots    : [], Users: [], Groups: [], group: group,
         editPlan : false, userFormVisible: false, groupFormVisible: false,
         spot     : spot, spotFormVisible: false, spotTimezone: '',
+        center   : center, draggingIndex: -1,
       }
     },
     created() {
@@ -390,6 +392,22 @@
       this.getPlan();
     },
     methods: {
+      BMapReadyHandler({BMap, map}) {
+        setTimeout(()=>{
+          if(this.Spots.length){
+            this.center.lng = this.Spots[0].location.lng;
+            this.center.lat = this.Spots[0].location.lat;
+            this.$notify({
+              type   : "success",
+              title  : "BMap ready",
+              message: this.center,
+            });
+          }
+        }, 1000);
+      },
+      locationSuccess({point, AddressComponent, marker}){
+        this.center = point;
+      },
       getPlan: _.debounce(function () {
         return getPlan({
           id: this.id
@@ -398,7 +416,7 @@
             this.plan      = result.plan;
             this.Users     = result.Users;
             this.Spots     = result.Spots.map((spot) => {
-              spot.show     = true;
+              spot.show     = false;
               spot.location = {
                 lng: spot.location.coordinates[0],
                 lat: spot.location.coordinates[1],
@@ -705,19 +723,43 @@
           });
       },
       dragstart(evt) {
-        console.log('dragend -begin-');
-        console.log(evt.type);
+        console.log('dragstart -begin-');
         console.log(evt.target);
-        // can we just set some thing in the target?
-        console.log('dragend -end-');
+        // can we just set some thing in the target? should use LA
+        let point = evt.target.LA;
+        for(let i = 0; i < this.Spots.length; i++){
+          if(this.Spots[i].location.lat === point.lat && this.Spots[i].location.lng === point.lng){
+            this.draggingIndex = i;
+            console.log(`dragging index is:${this.draggingIndex}`);
+            break;
+          }
+        }
+        console.log('dragstart -end-');
       },
       dragend(evt) {
         console.log('dragend -begin-');
-        console.log(evt.type);
         console.log(evt.target);
-        console.log(evt.pixel);
+        // use the draggingIndex to set the spot
+        console.log(`dragging index is:${this.draggingIndex}`);
+        this.Spots[this.draggingIndex].location = evt.point;
         console.log(evt.point);
+        this.draggingIndex = -1;
         console.log('dragend -end-');
+      },
+      showInfoWindow({type, target}){
+        let point = target.point;
+        // console.log(point);
+        // console.log(target);
+        for(let i = 0; i < this.Spots.length; i++){
+          if(this.Spots[i].location.lat === point.lat && this.Spots[i].location.lng === point.lng){
+            this.Spots[i].show = !this.Spots[i].show;
+            // this.$notify({
+            //   type : 'success',
+            //   title: this.Spots[i].show,
+            // });
+            break;
+          }
+        }
       },
       addSpotForm(evt) {
         this.spot.location   = evt.point;
@@ -812,14 +854,6 @@
     /*border-left: 1px dashed indianred;*/
     margin: 1em;
     border-bottom: 1px dashed goldenrod;
-  }
-
-  .user {
-    /*margin-left: 1em;*/
-  }
-
-  .add-user {
-    /*margin-left: 1em;*/
   }
 
   .group-list {

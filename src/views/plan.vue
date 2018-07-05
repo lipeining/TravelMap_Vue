@@ -157,6 +157,11 @@
             <bm-geolocation anchor="BMAP_ANCHOR_TOP_RIGHT"
                             @locationSuccess="locationSuccess"
                             :showAddressBar="true" :autoLocation="true"></bm-geolocation>
+            <bm-transit   v-if="Spots.length"
+                            :start="Spots[0].location" :end="Spots[-1].location" 
+                            :auto-viewport="true"
+                            @searchcomplete="transitHandler"
+                            :location="Spots[0].location"></bm-transit>
             <bm-marker v-if="spot.location.lng!==116.404 && spot.location.lat!==39.915"
                        :position="spot.location"
                        :dragging="false" animation="BMAP_ANIMATION_BOUNCE"
@@ -323,6 +328,7 @@
   } from "../api/plan";
   import {getUserNames} from "../api/user";
   import _ from 'lodash';
+  import {updateSpotLocation} from "../api/spot";
 
   export default {
     name   : "plan",
@@ -392,6 +398,15 @@
       this.getPlan();
     },
     methods: {
+      transitHandler(results){
+        console.log('transit handler');
+        console.log(results);
+        this.$notify({
+          type   : 'success',
+          title  : 'search path complete',
+          message: results
+        })
+      },
       BMapReadyHandler({BMap, map}) {
         setTimeout(()=>{
           if(this.Spots.length){
@@ -723,28 +738,45 @@
           });
       },
       dragstart(evt) {
-        console.log('dragstart -begin-');
-        console.log(evt.target);
+        // console.log('dragstart -begin-');
+        // console.log(evt.target);
         // can we just set some thing in the target? should use LA
         let point = evt.target.LA;
         for(let i = 0; i < this.Spots.length; i++){
           if(this.Spots[i].location.lat === point.lat && this.Spots[i].location.lng === point.lng){
             this.draggingIndex = i;
-            console.log(`dragging index is:${this.draggingIndex}`);
+            // console.log(`dragging index is:${this.draggingIndex}`);
             break;
           }
         }
-        console.log('dragstart -end-');
+        // console.log('dragstart -end-');
       },
       dragend(evt) {
-        console.log('dragend -begin-');
-        console.log(evt.target);
+        // console.log('dragend -begin-');
+        // console.log(evt.target);
         // use the draggingIndex to set the spot
-        console.log(`dragging index is:${this.draggingIndex}`);
-        this.Spots[this.draggingIndex].location = evt.point;
-        console.log(evt.point);
-        this.draggingIndex = -1;
-        console.log('dragend -end-');
+        // console.log(evt.point);
+        // console.log(`dragging index is:${this.draggingIndex}`);
+        updateSpotLocation({
+          id      : this.Spots[this.draggingIndex].id,
+          location: evt.point,
+        })
+        .then(()=>{
+          this.Spots[this.draggingIndex].location = evt.point;
+          this.draggingIndex = -1;
+          this.$notify({
+            type   : 'success',
+            title  : 'update location success',
+            message: ''
+          });
+        })
+        .catch(err=>{
+          this.$notify.error({
+            title  : 'update location error',
+            message: err
+          });
+        });
+        // console.log('dragend -end-');
       },
       showInfoWindow({type, target}){
         let point = target.point;
